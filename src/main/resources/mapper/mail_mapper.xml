@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC   "-//mybatis.org//DTD Mapper 3.0//EN"
+	"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+	
+	<mapper namespace="kr.co.gf.mail.dao.MailDAO">
+		<!-- 보낸쪽지 검색 -->
+		<select id="post_sendSerch" resultType="mail" parameterType="hashmap">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.GET_EMPNO = E.EMP_NO
+			<where>
+				<if test="keyword != null and !keyword.equals('') and opt == 'e_name'">
+					E.NAME LIKE CONCAT('%',#{keyword},'%')
+				</if>
+				<if test="keyword != null and !keyword.equals('') and opt == 'subject'">
+					P.SUBJECT LIKE CONCAT('%',#{keyword},'%')
+				</if>
+				<if test="keyword != null and !keyword.equals('') and opt == 'content'">
+					P.CONTENT LIKE CONCAT('%',#{keyword},'%')
+				</if>
+			   AND P.IS_DELETE=0 
+			   AND P.SEND_EMPNO=#{emp_no}
+			</where>
+		</select>
+		
+		<!-- 받은쪽지 검색 -->
+		<select id="post_getSerch" resultType="mail" parameterType="hashmap">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.SEND_EMPNO = E.EMP_NO
+			<where>
+				<if test="keyword != null and !keyword.equals('') and opt == 'e_name'">
+					E.NAME LIKE CONCAT('%',#{keyword},'%')
+				</if>
+				<if test="keyword != null and !keyword.equals('') and opt == 'subject'">
+					P.SUBJECT LIKE CONCAT('%',#{keyword},'%')
+				</if>
+				<if test="keyword != null and !keyword.equals('') and opt == 'content'">
+					P.CONTENT LIKE CONCAT('%',#{keyword},'%')
+				</if>
+			   AND P.IS_DELETE=0 
+			   AND P.GET_EMPNO=#{emp_no}
+			</where>
+		</select>
+		
+		<!-- 보낸쪽지 리스트 -->
+		<select id="post_sendList" resultType="mail" parameterType="String">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.GET_EMPNO = E.EMP_NO
+			 WHERE P.SEND_EMPNO = #{send_empno} 
+			   AND P.IS_DELETE=0
+			 ORDER BY SEND_TIME DESC
+		</select>
+		
+		<!-- 받은쪽지 리스트 -->
+		<select id="post_getList" resultType="mail" parameterType="String">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.SEND_EMPNO = E.EMP_NO
+			 WHERE P.GET_EMPNO = #{get_empno}
+			   AND P.IS_DELETE=0
+			 ORDER BY SEND_TIME DESC
+		</select>
+		
+		<insert id="post_sendWrite" parameterType="mail" useGeneratedKeys="true" keyColumn="idx" keyProperty="email_num">
+			INSERT INTO POST (SEND_EMPNO, GET_EMPNO, SUBJECT, CONTENT)
+			VALUES (#{send_empno}, #{get_empno}, #{subject}, #{content})
+		</insert>
+		
+		<select id="post_sendDetail" resultType="mail">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.GET_EMPNO = E.EMP_NO
+			 WHERE P.EMAIL_NUM = #{emailid}
+		</select>
+		
+		<select id="post_GetDetail" resultType="mail">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.SEND_EMPNO = E.EMP_NO
+			 WHERE P.EMAIL_NUM = #{emailid}
+		</select>
+		
+		<select id="post_get" resultType="mail">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.SEND_EMPNO = E.EMP_NO
+			 WHERE P.EMAIL_NUM = #{emailid}
+		</select>
+		
+		<update id="post_upHit">
+			UPDATE POST 
+			   SET GET_CHK = 1
+				 , CHK_TIME = NOW()
+			 WHERE EMAIL_NUM = #{emailid} 
+			   AND GET_EMPNO = #{get_empno}
+		</update>
+		
+		<insert id="post_getWrite" parameterType="mail">
+			INSERT INTO POST (SEND_EMPNO, GET_EMPNO, SUBJECT, CONTENT)
+			VALUES (#{send_empno}, #{get_empno}, #{subject}, #{content})
+		</insert>
+		
+		<!-- 목록에서 삭제 -->
+		<update id="post_hide" parameterType="hashmap">
+			UPDATE POST
+			   SET IS_DELETE = 1
+			 WHERE EMAIL_NUM IN
+			<foreach collection="hideList" item="item" open="(" separator="," close=")">
+				#{item}
+			</foreach>
+		</update>
+		
+		<select id="emp_find" resultType="emp">
+			SELECT *
+			  FROM EMP
+			 WHERE NAME = #{emp_no}
+		</select>
+		
+		<select id="emp_multi" parameterType="String" resultType="hashmap">
+			SELECT *
+			  FROM EMP
+			 WHERE NAME = #{get_empno}
+			   AND IS_DELETE = 0
+		</select>
+		
+		<select id="emp_multiList" resultType="hashmap">
+			SELECT *
+			  FROM EMP
+			 WHERE NAME = #{emp_no}
+		</select>
+		
+		<!-- 보낸쪽지 휴지통 -->
+		<select id="post_sendWasteList" resultType="mail" parameterType="String">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.GET_EMPNO = E.EMP_NO
+			 WHERE P.SEND_EMPNO = #{send_empno} 
+			   AND P.IS_DELETE=1
+			 ORDER BY SEND_TIME DESC
+		</select>
+		
+		<!-- 받은쪽지 휴지통 -->
+		<select id="post_getWasteList" resultType="mail" parameterType="String">
+			SELECT *
+			  FROM POST P
+			  LEFT JOIN EMP E
+				ON P.SEND_EMPNO = E.EMP_NO
+			 WHERE P.GET_EMPNO = #{get_empno}
+			   AND P.IS_DELETE= 1
+			 ORDER BY SEND_TIME DESC
+		</select>
+		
+		<select id="unreadMailCount">
+			SELECT COUNT(*) FROM POST WHERE GET_EMPNO = #{param1} AND GET_CHK = 0;
+		</select>
+		
+	</mapper>

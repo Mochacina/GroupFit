@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC   "-//mybatis.org//DTD Mapper 3.0//EN"
+   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+   
+   <mapper namespace="kr.co.gf.statistics.dao.StatisDAO">
+   		<select id="totalSales" resultType="statisDTO">
+   			   SELECT DATE_FORMAT(rt.purch_date, '%Y-%m') AS month, COALESCE(SUM(t.ticket_price), 0) AS totalsales
+			   FROM registered_ticket rt
+    		   JOIN ticket t ON rt.ticket_no = t.ticket_no
+    		   WHERE YEAR(rt.purch_date) = '2023'
+			   GROUP BY month
+		       ORDER BY month
+   		</select>
+   		
+   		<select id="totalYearSales" resultType="statisDTO">
+   			   SELECT DATE_FORMAT(sd.year_month, '%Y-%m') AS `month`,COALESCE(SUM(t.ticket_price), 0) AS totalsales
+			   FROM standard_date sd
+			   LEFT JOIN registered_ticket rt ON date_format(rt.purch_date,'%Y-%m')=date_format(sd.year_month,'%Y-%m')
+			   LEFT JOIN ticket t ON rt.ticket_no = t.ticket_no
+			   where YEAR(sd.year_month)=#{param1}
+			   GROUP BY DATE_FORMAT(sd.year_month, '%Y-%m')
+   		</select>
+   		
+   		<select id="branchList" resultType="statisDTO">
+   			SELECT * FROM branch
+   		</select>
+   		
+   		<select id="branchTotalSales" resultType="statisDTO">
+   			 SELECT DATE_FORMAT(sd.year_month, '%Y-%m') AS `month`,COALESCE(SUM(t.ticket_price), 0) AS totalsales
+			 FROM standard_date sd
+			 LEFT JOIN registered_ticket rt ON DATE_FORMAT(rt.purch_date, '%Y-%m') = DATE_FORMAT(sd.year_month, '%Y-%m') AND rt.b_idx = #{param2}
+			 LEFT JOIN ticket t ON rt.ticket_no = t.ticket_no
+			 WHERE YEAR(sd.year_month) = #{param1}
+			 GROUP BY DATE_FORMAT(sd.year_month, '%Y-%m');
+   		</select>
+   		
+   		<select id="empList">
+   			SELECT name,b_idx,emp_no FROM emp where position !='대표' AND position!='지점장'
+   		</select>
+   		
+   		<select id="branchEmpList" resultType="statisDTO">
+   			SELECT name,emp_no FROM emp where b_idx=#{param1} AND position!='지점장' AND position!='대표'
+   		</select>
+   		
+   		<select id="individual" resultType="statisDTO">
+   			 SELECT DATE_FORMAT(sd.year_month, '%Y-%m') AS `month`,COALESCE(SUM(t.ticket_price), 0) AS totalsales
+			 FROM standard_date sd
+			 LEFT JOIN registered_ticket rt ON DATE_FORMAT(rt.purch_date, '%Y-%m') = DATE_FORMAT(sd.year_month, '%Y-%m') AND rt.emp_no = #{param1}
+			 LEFT JOIN ticket t ON rt.ticket_no = t.ticket_no
+			 WHERE YEAR(sd.year_month) = #{param2}
+			 GROUP BY DATE_FORMAT(sd.year_month, '%Y-%m');
+   		</select>
+   		
+   		<select id="branchPersonal" resultType="statisDTO">
+   			SELECT e.name, COALESCE(SUM(t.ticket_price), 0) AS personal_totalsales
+			FROM emp AS e
+			LEFT JOIN registered_ticket AS rt ON e.emp_no = rt.emp_no and DATE_FORMAT(rt.purch_date, '%Y-%m') = #{param1}
+			LEFT JOIN ticket AS t ON rt.ticket_no = t.ticket_no
+			where `position` !='지점장' AND `position` !='대표' and e.b_idx=#{param2} AND e.position=#{param3}
+			GROUP BY e.name;
+   		</select>
+   		
+   		<select id="memberAdmission" parameterType="hashmap" resultType="statisDTO">
+   			SELECT COUNT(*) AS entry_count, DATE_FORMAT(enter_time, '%H') AS time, DAYNAME(enter_date) AS weekday
+			FROM entry_time
+			WHERE b_idx = #{b_idx} AND DAYNAME(enter_date) = #{day} and DATE_FORMAT(enter_date, '%Y-%m') = #{year}
+			GROUP BY time, weekday
+			ORDER BY time;
+   		</select>
+   		
+   		<select id="countMember" parameterType="hashmap" resultType="statisDTO">
+   			   SELECT DATE_FORMAT(sd.year_month, '%Y-%m') AS `month`,count(rt.emp_no) as countMember
+			   FROM standard_date sd
+			   LEFT JOIN registered_ticket rt ON date_format(rt.purch_date,'%Y-%m')=date_format(sd.year_month,'%Y-%m') and b_idx=#{b_idx}
+			   where YEAR(sd.year_month)=#{branchYear}
+			   GROUP BY DATE_FORMAT(sd.year_month, '%Y-%m');
+   		</select>
+   		
+   		<select id="branchName" resultType="String">
+   			SELECT b_name FROM branch WHERE b_idx=#{b_idx}
+   		</select>
+   			
+   		
+   </mapper>
